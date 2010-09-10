@@ -1,0 +1,140 @@
+/*==============================================================================
+
+  Program: 3D Slicer
+
+  Copyright (c) 2010 Kitware Inc.
+
+  See Doc/copyright/copyright.txt
+  or http://www.slicer.org/copyright/copyright.txt for details.
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+
+  This file was originally developed by Jean-Christophe Fillion-Robin, Kitware Inc.
+  and was partially funded by NIH grant 3P41RR013218-12S1
+
+==============================================================================*/
+
+#ifndef __qSlicerLayoutManager_p_h
+#define __qSlicerLayoutManager_p_h
+
+/// Qt includes
+#include <QHash>
+
+/// CTK includes
+#include <ctkPimpl.h>
+#include <ctkVTKObject.h>
+
+// qMRML includes
+#include "qSlicerLayoutManager.h"
+
+// VTK includes
+#include <vtkSmartPointer.h>
+
+class QLayout;
+class QGridLayout;
+class QButtonGroup;
+class qMRMLSliceWidget;
+class qMRMLThreeDView;
+class vtkCollection;
+class vtkObject;
+class vtkMRMLLayoutNode;
+class vtkMRMLViewNode;
+class vtkMRMLSliceNode;
+
+//-----------------------------------------------------------------------------
+class qSlicerLayoutManagerPrivate: public QObject, public ctkPrivate<qSlicerLayoutManager>
+{
+  Q_OBJECT
+  QVTK_OBJECT
+public:
+  CTK_DECLARE_PUBLIC(qSlicerLayoutManager);
+  qSlicerLayoutManagerPrivate();
+  ~qSlicerLayoutManagerPrivate();
+
+  void setMRMLScene(vtkMRMLScene* scene);
+  void setMRMLLayoutNode(vtkMRMLLayoutNode* node);
+  void setActiveMRMLThreeDViewNode(vtkMRMLViewNode * node);
+
+  /// Instantiate a slice viewer corresponding to \a sliceViewName
+  QWidget* createSliceWidget(vtkMRMLSliceNode* sliceNode);
+
+  /// Delete slice viewer associated with \a sliceNode
+  void removeSliceView(vtkMRMLSliceNode* sliceNode);
+
+  /// Instantiate a 3D Viewer corresponding to \a viewNode
+  qMRMLThreeDView* createThreeDView(vtkMRMLViewNode* viewNode);
+  /// Convenient function that creates a vtkMRMLViewNode and a qMRMLThreeDView
+  qMRMLThreeDView* createThreeDView();
+
+  /// Delete 3D Viewer associated with \a viewNode
+  void removeThreeDView(vtkMRMLViewNode* viewNode);
+
+  ///
+  void initialize();
+
+  /// Enable/disable paint event associated with the TargetWidget
+  bool startUpdateLayout();
+  void endUpdateLayout(bool updateEnabled);
+
+  /// Actually set the layout type to the node
+  void updateLayoutNode(int layout);
+  
+  /// Hide and remove all widgets from the current layout
+  void clearLayout(QLayout* layout);
+
+  void setLayoutInternal(int layout);
+  void setConventionalView();
+  void setOneUp3DView();
+  void setOneUpSliceView(const QString& sliceViewName);
+  void setFourUpView();
+  void setTabbed3DView();
+  void setTabbedSliceView();
+  void setLightboxView();
+  void setCompareView();
+  void setSideBySideCompareView();
+  void setDual3DView();
+  void setNone();
+
+  /// Convenient function allowing to get a reference to the renderView widget
+  /// identified by \a renderViewName.
+  qMRMLThreeDView* threeDView(vtkMRMLViewNode* node)const;
+  qMRMLThreeDView* threeDView(int id)const;
+  qMRMLThreeDView* threeDViewCreateIfNeeded(int id);
+
+  /// Convenient function allowing to get a reference to the sliceView widget
+  /// identified by \a sliceViewName
+  qMRMLSliceWidget* sliceWidget(const QString& sliceLayoutName)const;
+  qMRMLSliceWidget* sliceWidget(vtkMRMLSliceNode* node)const;
+
+public slots:
+  /// Handle MRML scene event
+  void onNodeAddedEvent(vtkObject* scene, vtkObject* node);
+  void onNodeRemovedEvent(vtkObject* scene, vtkObject* node);
+  void onSceneImportedEvent();
+  void onSceneAboutToBeClosedEvent();
+  void onSceneClosedEvent();
+
+  /// Handle Layout node event
+  void onLayoutNodeModifiedEvent(vtkObject* layoutNode);
+
+public:
+  QString            ScriptedDisplayableManagerDirectory;
+  vtkMRMLScene*      MRMLScene;
+  vtkMRMLLayoutNode* MRMLLayoutNode;
+  vtkMRMLViewNode*   ActiveMRMLThreeDViewNode;
+  int                CurrentViewArrangement;
+  int                SavedCurrentViewArrangement;
+  QGridLayout*       GridLayout;
+  QWidget*           TargetWidget;
+  QButtonGroup*      SliceControllerButtonGroup;
+  vtkCollection*     MRMLSliceLogics;
+
+  QList<qMRMLThreeDView*>           ThreeDViewList;
+  QList<qMRMLSliceWidget*>          SliceWidgetList;
+};
+
+#endif
